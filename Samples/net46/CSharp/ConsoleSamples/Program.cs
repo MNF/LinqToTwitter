@@ -13,6 +13,7 @@ namespace Linq2TwitterDemos_Console
         {
             try
             {
+                CopyConfigOAuthValuesToEnvironmentVariables();
                 Task demoTask = DoDemosAsync();
                 demoTask.Wait();
             }
@@ -24,7 +25,26 @@ namespace Linq2TwitterDemos_Console
             Console.Write("\nPress any key to close console window...");
             Console.ReadKey(true);
         }
-  
+
+        private static void CopyConfigOAuthValuesToEnvironmentVariables()
+        {
+            SetEnvironmentVariableIfNotEmpty(OAuthKeys.TwitterConsumerKey, "consumerKey");
+            SetEnvironmentVariableIfNotEmpty(OAuthKeys.TwitterConsumerSecret ,"consumerSecret");
+            SetEnvironmentVariableIfNotEmpty(OAuthKeys.TwitterOAuthToken,"oauthToken");
+            SetEnvironmentVariableIfNotEmpty(OAuthKeys.TwitterOAuthTokenSecret,"oauthTokenSecret");
+            SetEnvironmentVariableIfNotEmpty(OAuthKeys.TwitterAccessToken,"accessToken");
+            SetEnvironmentVariableIfNotEmpty(OAuthKeys.TwitterAccessTokenSecret,"accessTokenSecret");
+        }
+
+        private static void SetEnvironmentVariableIfNotEmpty(string envVariableKey, string appSettingKey)
+        {
+            var value = ConfigurationManager.AppSettings[appSettingKey];
+            if (!String.IsNullOrEmpty(value))
+            {
+                Environment.SetEnvironmentVariable(envVariableKey, value);
+            }
+        }
+
         static async Task DoDemosAsync()
         {
             IAuthorizer auth = ChooseAuthenticationStrategy();
@@ -215,6 +235,21 @@ namespace Linq2TwitterDemos_Console
 
         static IAuthorizer DoPinOAuth()
         {
+            var oAuthToken = Environment.GetEnvironmentVariable(OAuthKeys.TwitterOAuthToken);
+            if (!String.IsNullOrEmpty(oAuthToken))
+            {
+                var authWithToken = new PinAuthorizer()
+                {
+                    CredentialStore = new InMemoryCredentialStore
+                    {
+                        ConsumerKey = Environment.GetEnvironmentVariable(OAuthKeys.TwitterConsumerKey),
+                        ConsumerSecret = Environment.GetEnvironmentVariable(OAuthKeys.TwitterConsumerSecret),
+                        OAuthToken = oAuthToken
+                    },
+                };
+                return authWithToken;
+            }
+
             var auth = new PinAuthorizer()
             {
                 CredentialStore = new InMemoryCredentialStore
